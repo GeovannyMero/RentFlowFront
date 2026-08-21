@@ -1,11 +1,11 @@
-import './globals.css';
+import { AuthProvider } from '@/components/auth/auth-provider';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { AuthProvider } from '@/components/auth/auth-provider';
+import './globals.css';
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+// export const instant = false;
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -40,7 +40,7 @@ export default function RootLayout({
         <AuthProvider>
           {children}
         </AuthProvider>
-        </body>
+      </body>
     </html>
   );
 }
