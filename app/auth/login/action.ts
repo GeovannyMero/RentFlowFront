@@ -1,41 +1,55 @@
 'use server'
 
-import { createClient } from '@/utils/supabase/server'
-import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
+import { createClient } from '@/utils/supabase/server';
+import { redirect } from 'next/navigation';
 
-export async function login(formData: FormData) {
-    const supabase = await createClient()
+export type AuthState = {
+    error?: string | null;
+    message?: string | null;
+} | null;
 
-    const data = {
-        email: formData.get('email') as string,
-        password: formData.get('password') as string,
+export async function login(prevState: AuthState, formData: FormData): Promise<AuthState> {
+    const email = String(formData.get('email') ?? '').trim();
+    const password = String(formData.get('password') ?? '');
+
+    if (!email || !password) {
+        return { error: 'Por favor ingresa tu correo y contraseña' };
     }
 
-    const { error } = await supabase.auth.signInWithPassword(data)
+    const supabase = await createClient();
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-        redirect('/error')
+        return {
+            error: error.message === 'Invalid login credentials'
+                ? 'Credenciales incorrectas'
+                : error.message,
+        };
     }
 
-    revalidatePath('/', 'layout')
-    redirect('/dashboard')
+    redirect('/');
 }
 
-export async function signup(formData: FormData) {
-    const supabase = await createClient()
+// ✅ Firma unificada 2: (prevState, formData)
+export async function signup(prevState: AuthState, formData: FormData): Promise<AuthState> {
+    const email = String(formData.get('email') ?? '').trim();
+    const password = String(formData.get('password') ?? '');
+    const confirmPassword = String(formData.get('confirmPassword') ?? '');
 
-    const data = {
-        email: formData.get('email') as string,
-        password: formData.get('password') as string,
+    if (password !== confirmPassword) {
+        return { error: 'Las contraseñas no coinciden' };
     }
 
-    const { error } = await supabase.auth.signUp(data)
+    if (password.length < 6) {
+        return { error: 'La contraseña debe tener al menos 6 caracteres' };
+    }
+
+    const supabase = await createClient();
+    const { error } = await supabase.auth.signUp({ email, password });
 
     if (error) {
-        redirect('/error')
+        return { error: error.message };
     }
 
-    revalidatePath('/', 'layout')
-    redirect('/dashboard')
+    return { message: 'Cuenta creada exitosamente. Puedes iniciar sesión.' };
 }

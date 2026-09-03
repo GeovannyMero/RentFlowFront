@@ -1,9 +1,9 @@
 'use client';
 
-import { Suspense } from 'react';
 import { AuthForm } from '@/components/auth/auth-form';
+import { Suspense } from 'react';
 
-export const dynamic = 'force-dynamic';
+// export const dynamic = 'force-dynamic'; 
 
 export default function SignupPage() {
   return (

@@ -7,6 +7,9 @@ const nextConfig = {
   images: { unoptimized: true },
   experimental: {
     serverActions: true, // 👈 Añade esta línea
+    instantInsights: {
+      validationLevel: 'manual-warning', // Solo valida rutas con "export const instant = true"
+    },
   },
 };
 

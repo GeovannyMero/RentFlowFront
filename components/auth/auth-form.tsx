@@ -7,57 +7,18 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Building2, Loader2 } from 'lucide-react';
-import { useState } from 'react';
-import { useAuth } from './auth-provider';
+import { useActionState } from 'react';
 
 interface AuthFormProps {
   mode: 'login' | 'signup';
 }
 
 export function AuthForm({ mode }: AuthFormProps) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const { signIn, signUp } = useAuth();
+  // Vinculamos el Server Action correspondiente según el modo
+  const actionToUse = mode === 'login' ? login : signup;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setMessage(null);
-
-    if (mode === 'signup' && password !== confirmPassword) {
-      setError('Las contraseñas no coinciden');
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
-      return;
-    }
-
-    setLoading(true);
-
-    if (mode === 'login') {
-      const { error } = await signIn(email, password);
-      if (error) {
-        setError(error.message === 'Invalid login credentials'
-          ? 'Credenciales incorrectas'
-          : error.message);
-      }
-    } else {
-      const { error } = await signUp(email, password);
-      if (error) {
-        setError(error.message);
-      } else {
-        setMessage('Cuenta creada exitosamente. Puedes iniciar sesión.');
-      }
-    }
-
-    setLoading(false);
-  };
+  // useActionState maneja la respuesta del servidor (state) y el estado de carga (isPending)
+  const [state, formAction, isPending] = useActionState(actionToUse, null);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 p-4">
@@ -85,67 +46,70 @@ export function AuthForm({ mode }: AuthFormProps) {
                 : 'Completa el formulario para crear tu cuenta'}
             </CardDescription>
           </CardHeader>
-          <form onSubmit={handleSubmit}>
+
+          {/* Vinculamos el Server Action directamente en el prop action del formulario */}
+          <form action={formAction}>
             <CardContent className="space-y-4">
-              {error && (
+              {state?.error && (
                 <Alert variant="destructive" className="bg-red-50 border-red-200">
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>{state.error}</AlertDescription>
                 </Alert>
               )}
-              {message && (
+              {state?.message && (
                 <Alert className="bg-emerald-50 border-emerald-200">
-                  <AlertDescription className="text-emerald-700">{message}</AlertDescription>
+                  <AlertDescription className="text-emerald-700">{state.message}</AlertDescription>
                 </Alert>
               )}
+
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-slate-700">Correo electrónico</Label>
                 <Input
                   id="email"
+                  name="email" /* 👈 Requerido para FormData */
                   type="email"
                   placeholder="tu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
                   required
                   className="bg-white border-slate-300 text-slate-800 placeholder:text-slate-400 focus:border-emerald-500"
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-slate-700">Contraseña</Label>
                 <Input
                   id="password"
+                  name="password" /* 👈 Requerido para FormData */
                   type="password"
                   placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                   required
                   className="bg-white border-slate-300 text-slate-800 placeholder:text-slate-400 focus:border-emerald-500"
                 />
               </div>
+
               {mode === 'signup' && (
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword" className="text-slate-700">Confirmar Contraseña</Label>
                   <Input
                     id="confirmPassword"
+                    name="confirmPassword" /* 👈 Requerido para FormData */
                     type="password"
                     placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     className="bg-white border-slate-300 text-slate-800 placeholder:text-slate-400 focus:border-emerald-500"
                   />
                 </div>
               )}
             </CardContent>
+
             <CardFooter className="flex flex-col gap-4">
               <Button
-                // type="submit"
+                type="submit"
                 className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold"
-                disabled={loading}
-                formAction={mode === 'login' ? login : signup}
+                disabled={isPending}
               >
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {mode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}
               </Button>
+
               <div className="text-center text-sm text-slate-500">
                 {mode === 'login' ? (
                   <>

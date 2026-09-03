@@ -2,8 +2,8 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 
 interface AuthContextType {
   user: User | null;
@@ -17,6 +17,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [supabase] = useState(() => createClient());
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -25,7 +26,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // 1. Cargar la sesión inicial de forma síncrona/asíncrona segura
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -36,25 +36,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error('Error al obtener la sesión:', error);
       } finally {
-        if (mounted) {
-          setLoading(false); // Solo marcamos fin de carga aquí
-        }
+        if (mounted) setLoading(false);
       }
     };
 
     initializeAuth();
 
-    // 2. Escuchar cambios futuros de estado de autenticación (Login, Logout, Token Refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (mounted) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-
-        // Si el usuario inicia o cierra sesión explícitamente, refrescamos el Server Component
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-          router.refresh();
-        }
       }
     });
 
@@ -62,24 +54,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [router]);
+  }, [supabase]);
 
   const signUp = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signUp({ email, password });
     return { error };
-  }, []);
+  }, [supabase]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
-  }, []);
+  }, [supabase]);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     router.push('/auth/login');
-  }, [router]);
+  }, [supabase, router]);
 
   return (
     <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut }}>

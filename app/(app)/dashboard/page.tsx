@@ -1,30 +1,29 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/auth/auth-provider';
-import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { supabase } from '@/lib/supabase';
+import { endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
+import { es } from 'date-fns/locale';
 import {
-  Building2,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  Users,
   AlertCircle,
+  Building2,
+  DollarSign,
   Receipt,
-  Wallet,
+  TrendingDown,
+  TrendingUp,
+  Wallet
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import {
-  AreaChart,
   Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
 } from 'recharts';
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
-import { es } from 'date-fns/locale';
 
 interface FinancialSummary {
   totalIncome: number;
@@ -344,14 +343,12 @@ export default function DashboardPage() {
                 recentPayments.map((payment) => (
                   <div key={payment.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200">
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${
-                        payment.status === 'paid' ? 'bg-emerald-50' :
+                      <div className={`p-2 rounded-lg ${payment.status === 'paid' ? 'bg-emerald-50' :
                         payment.status === 'pending' ? 'bg-yellow-50' : 'bg-red-50'
-                      }`}>
-                        <DollarSign className={`h-4 w-4 ${
-                          payment.status === 'paid' ? 'text-emerald-600' :
+                        }`}>
+                        <DollarSign className={`h-4 w-4 ${payment.status === 'paid' ? 'text-emerald-600' :
                           payment.status === 'pending' ? 'text-yellow-600' : 'text-red-500'
-                        }`} />
+                          }`} />
                       </div>
                       <div>
                         <p className="text-slate-800 font-medium text-sm">
@@ -366,13 +363,12 @@ export default function DashboardPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-slate-800 font-semibold text-sm">{formatCurrency(payment.amount)}</p>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        payment.status === 'paid' ? 'bg-emerald-100 text-emerald-700' :
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${payment.status === 'paid' ? 'bg-emerald-100 text-emerald-700' :
                         payment.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-red-100 text-red-600'
-                      }`}>
+                          'bg-red-100 text-red-600'
+                        }`}>
                         {payment.status === 'paid' ? 'Pagado' :
-                         payment.status === 'pending' ? 'Pendiente' : 'Vencido'}
+                          payment.status === 'pending' ? 'Pendiente' : 'Vencido'}
                       </span>
                     </div>
                   </div>
