@@ -32,6 +32,8 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/utils';
+import { GetAppartment } from '@/services/apartmetService';
+import { GetContract } from '@/services/contractService';
 import { Apartment, ApartmentInsert } from '@/types/database';
 import {
     AlertCircle,
@@ -81,18 +83,20 @@ export default function ApartmentsClient() {
 
     const loadApartments = async () => {
         setLoading(true);
-        const { data: apartmentsData } = await supabase
-            .from('apartments')
-            .select('*')
-            .eq('user_id', user!.id)
-            .order('number');
+        // const { data: apartmentsData } = await supabase
+        //     .from('apartments')
+        //     .select('*')
+        //     .eq('user_id', user!.id)
+        //     .order('number');
+        const apartmentsData = await GetAppartment(user!.id);
 
         // Get active contracts for each apartment
-        const { data: contracts } = await supabase
-            .from('contracts')
-            .select('id, apartment_id, tenant_id, tenants(first_name, last_name)')
-            .eq('user_id', user!.id)
-            .eq('status', 'active');
+        // const { data: contracts } = await supabase
+        //     .from('contracts')
+        //     .select('id, apartment_id, tenant_id, tenants(first_name, last_name)')
+        //     .eq('user_id', user!.id)
+        //     .eq('status', 'active');
+        const contracts = await GetContract(user!.id);
 
         const apartmentsWithTenants = apartmentsData?.map((apt) => {
             const contract = contracts?.find((c) => c.apartment_id === apt.id);
