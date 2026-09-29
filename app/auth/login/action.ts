@@ -17,8 +17,9 @@ export async function login(prevState: AuthState, formData: FormData): Promise<A
     }
 
     const supabase = await createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
+    console.log({ data, error })
     if (error) {
         return {
             error: error.message === 'Invalid login credentials'
