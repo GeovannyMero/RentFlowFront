@@ -30,7 +30,6 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/utils';
 import { GetAppartment } from '@/services/apartmetService';
 import { GetContract } from '@/services/contractService';
@@ -50,7 +49,8 @@ import {
     User,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
+import { deleteApartment, saveApartment } from './actions';
 
 
 export default function ApartmentsClient() {
@@ -62,6 +62,7 @@ export default function ApartmentsClient() {
     const [selectedApartment, setSelectedApartment] = useState<Apartment | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [isPending, startTransition] = useTransition();
     const [formData, setFormData] = useState<ApartmentInsert>({
         number: '',
         name: '',
@@ -146,54 +147,43 @@ export default function ApartmentsClient() {
         setDialogOpen(true);
     };
 
-    const handleSave = async () => {
+    const handleSave = () => {
         if (!formData.number || !formData.name || formData.monthly_rent <= 0) {
             return;
         }
 
-        if (selectedApartment) {
-            const { error } = await supabase
-                .from('apartments')
-                .update({
-                    number: formData.number,
-                    name: formData.name,
-                    description: formData.description || null,
-                    monthly_rent: formData.monthly_rent,
-                    status: formData.status,
-                    bedrooms: formData.bedrooms,
-                    bathrooms: formData.bathrooms,
-                    area: formData.area || null,
-                    floor: formData.floor || null,
-                })
-                .eq('id', selectedApartment.id);
+        startTransition(async () => {
+            const result = await saveApartment(selectedApartment?.id ?? null, {
+                number: formData.number,
+                name: formData.name,
+                description: formData.description,
+                monthly_rent: formData.monthly_rent,
+                status: formData.status ?? 'vacant',
+                bedrooms: formData.bedrooms ?? 1,
+                bathrooms: formData.bathrooms ?? 1,
+                area: formData.area,
+                floor: formData.floor,
+            });
 
-            if (!error) {
+            if (!result.error) {
                 loadApartments();
                 setDialogOpen(false);
             }
-        } else {
-            const { error } = await supabase.from('apartments').insert([formData]);
-
-            if (!error) {
-                loadApartments();
-                setDialogOpen(false);
-            }
-        }
+        });
     };
 
-    const handleDelete = async () => {
-        if (selectedApartment) {
-            const { error } = await supabase
-                .from('apartments')
-                .delete()
-                .eq('id', selectedApartment.id);
+    const handleDelete = () => {
+        if (!selectedApartment) return;
 
-            if (!error) {
+        startTransition(async () => {
+            const result = await deleteApartment(selectedApartment.id);
+
+            if (!result.error) {
                 loadApartments();
                 setDeleteDialogOpen(false);
                 setSelectedApartment(null);
             }
-        }
+        });
     };
 
     const getStatusColor = (status: string) => {
@@ -512,9 +502,10 @@ export default function ApartmentsClient() {
                         </Button>
                         <Button
                             onClick={handleSave}
+                            disabled={isPending}
                             className="bg-gradient-to-r from-emerald-500 to-teal-600"
                         >
-                            {selectedApartment ? 'Actualizar' : 'Crear'}
+                            {isPending ? 'Guardando...' : selectedApartment ? 'Actualizar' : 'Crear'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -540,8 +531,8 @@ export default function ApartmentsClient() {
                         >
                             Cancelar
                         </Button>
-                        <Button variant="destructive" onClick={handleDelete}>
-                            Eliminar
+                        <Button variant="destructive" onClick={handleDelete} disabled={isPending}>
+                            {isPending ? 'Eliminando...' : 'Eliminar'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

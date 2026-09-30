@@ -50,6 +50,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { deleteExpense, saveExpense } from './actions';
 
 const categoryIcons: Record<string, React.ReactNode> = {
   maintenance: <Wrench className="h-4 w-4" />,
@@ -174,37 +175,24 @@ export default function ExpensesPage() {
       return;
     }
 
-    const payload = {
+    const { error } = await saveExpense(selectedExpense?.id ?? null, {
       apartment_id: formData.apartment_id === 'none' ? null : formData.apartment_id,
       category: formData.category,
       expense_type: formData.expense_type,
       description: formData.description,
       amount: parseFloat(formData.amount),
       expense_date: formData.expense_date,
-      notes: formData.notes || null,
-      user_id: user!.id,
-    };
+      notes: formData.notes,
+    });
 
-    if (selectedExpense) {
-      const { error } = await supabase
-        .from('expenses')
-        .update(payload)
-        .eq('id', selectedExpense.id);
-
-      if (error) {
-        toast({ title: 'Error', description: 'No se pudo actualizar el gasto.', variant: 'destructive' });
-        return;
-      }
-      toast({ title: 'Gasto actualizado', description: 'Los cambios se guardaron correctamente.' });
-    } else {
-      const { error } = await supabase.from('expenses').insert(payload);
-
-      if (error) {
-        toast({ title: 'Error', description: 'No se pudo registrar el gasto.', variant: 'destructive' });
-        return;
-      }
-      toast({ title: 'Gasto registrado', description: 'El gasto se registró correctamente.' });
+    if (error) {
+      toast({ title: 'Error', description: error, variant: 'destructive' });
+      return;
     }
+
+    toast(selectedExpense
+      ? { title: 'Gasto actualizado', description: 'Los cambios se guardaron correctamente.' }
+      : { title: 'Gasto registrado', description: 'El gasto se registró correctamente.' });
 
     setDialogOpen(false);
     loadExpenses();
@@ -213,10 +201,10 @@ export default function ExpensesPage() {
   const handleDelete = async () => {
     if (!selectedExpense) return;
 
-    const { error } = await supabase.from('expenses').delete().eq('id', selectedExpense.id);
+    const { error } = await deleteExpense(selectedExpense.id);
 
     if (error) {
-      toast({ title: 'Error', description: 'No se pudo eliminar el gasto.', variant: 'destructive' });
+      toast({ title: 'Error', description: error, variant: 'destructive' });
       return;
     }
 

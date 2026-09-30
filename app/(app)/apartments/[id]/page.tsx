@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/auth/auth-provider';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { terminateContract } from '../actions';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -179,54 +180,18 @@ export default function ApartmentDetailPage() {
     if (!contract || !terminationReason) return;
     setTerminating(true);
 
-    const { error: contractError } = await supabase
-      .from('contracts')
-      .update({
-        status: 'terminated',
-        end_date: terminationDate,
-        termination_date: terminationDate,
-        termination_reason: terminationReason,
-      })
-      .eq('id', contract.id);
+    const { error } = await terminateContract({
+      contract_id: contract.id,
+      apartment_id: apartment!.id,
+      termination_date: terminationDate,
+      reason: terminationReason,
+      notes: terminationNotes,
+    });
 
-    if (contractError) {
+    if (error) {
       toast({
         title: 'Error',
-        description: 'No se pudo terminar el contrato.',
-        variant: 'destructive',
-      });
-      setTerminating(false);
-      return;
-    }
-
-    const { error: terminationError } = await supabase
-      .from('contract_terminations')
-      .insert({
-        contract_id: contract.id,
-        termination_date: terminationDate,
-        reason: terminationReason,
-        notes: terminationNotes,
-      });
-
-    if (terminationError) {
-      toast({
-        title: 'Error',
-        description: 'No se pudo registrar la terminación.',
-        variant: 'destructive',
-      });
-      setTerminating(false);
-      return;
-    }
-
-    const { error: apartmentError } = await supabase
-      .from('apartments')
-      .update({ status: 'vacant' })
-      .eq('id', apartment!.id);
-
-    if (apartmentError) {
-      toast({
-        title: 'Error',
-        description: 'No se pudo actualizar el departamento.',
+        description: error,
         variant: 'destructive',
       });
       setTerminating(false);

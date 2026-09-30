@@ -62,7 +62,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase]);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error) {
+      setSession(data.session);
+      setUser(data.user);
+    }
     return { error };
   }, [supabase]);
 

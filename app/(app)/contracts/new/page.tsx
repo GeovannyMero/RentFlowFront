@@ -28,6 +28,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { createContract } from '../actions';
 
 function NewContractContent() {
   const { user } = useAuth();
@@ -95,77 +96,12 @@ function NewContractContent() {
     e.preventDefault();
     setLoading(true);
 
-    // Create contract
-    const { data: contract, error: contractError } = await supabase
-      .from('contracts')
-      .insert([
-        {
-          apartment_id: formData.apartment_id,
-          tenant_id: formData.tenant_id,
-          start_date: formData.start_date,
-          end_date: formData.end_date || null,
-          monthly_rent: formData.monthly_rent,
-          deposit_amount: formData.deposit_amount || null,
-          deposit_paid: formData.deposit_paid,
-          notes: formData.notes || null,
-          status: 'active',
-          user_id: user!.id,
-        },
-      ])
-      .select()
-      .single();
+    const { error } = await createContract(formData);
 
-    if (contractError) {
-      console.error('Error creating contract:', contractError);
+    if (error) {
+      console.error('Error creating contract:', error);
       setLoading(false);
       return;
-    }
-
-    // Update apartment status
-    await supabase
-      .from('apartments')
-      .update({ status: 'occupied' })
-      .eq('id', formData.apartment_id);
-
-    // If deposit is paid, create a payment record
-    if (formData.deposit_amount > 0 && formData.deposit_paid) {
-      await supabase.from('payments').insert([
-        {
-          contract_id: contract.id,
-          amount: formData.deposit_amount,
-          payment_date: formData.start_date,
-          due_date: formData.start_date,
-          payment_type: 'deposit',
-          payment_method: 'cash',
-          status: 'paid',
-          notes: 'Depósito de garantía',
-          user_id: user!.id,
-        },
-      ]);
-    }
-
-    // Create first month's rent payment
-    const { data: monthPaymentExists } = await supabase
-      .from('payments')
-      .select('id')
-      .eq('contract_id', contract.id)
-      .eq('payment_type', 'rent')
-      .gte('due_date', formData.start_date)
-      .lte('due_date', formData.start_date);
-
-    if (!monthPaymentExists || monthPaymentExists.length === 0) {
-      await supabase.from('payments').insert([
-        {
-          contract_id: contract.id,
-          amount: formData.monthly_rent,
-          payment_date: formData.start_date,
-          due_date: formData.start_date,
-          payment_type: 'rent',
-          status: 'pending',
-          notes: 'Renta del primer mes',
-          user_id: user!.id,
-        },
-      ]);
     }
 
     router.push(`/apartments/${formData.apartment_id}`);

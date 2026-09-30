@@ -1,6 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/utils/supabase/client';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Cliente del navegador basado en cookies (@supabase/ssr), el mismo que usa el AuthProvider.
+// Así las consultas llevan el token de sesión y pasan las políticas RLS.
+export const supabase = createClient();

@@ -27,6 +27,7 @@ import {
   Building2,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { savePayment } from '../actions';
 
 function NewPaymentContent() {
   const { user } = useAuth();
@@ -96,12 +97,7 @@ function NewPaymentContent() {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.from('payments').insert([
-      {
-        ...formData,
-        user_id: user!.id,
-      },
-    ]);
+    const { error } = await savePayment(null, formData);
 
     if (!error) {
       router.push('/payments');

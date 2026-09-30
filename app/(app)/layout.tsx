@@ -1,6 +1,6 @@
 'use client';
 
-import { AuthProvider, useAuth } from '@/components/auth/auth-provider';
+import { useAuth } from '@/components/auth/auth-provider';
 import { Sidebar } from '@/components/layout/sidebar';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -43,9 +43,5 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <AuthProvider>
-      <AppLayoutContent>{children}</AppLayoutContent>
-    </AuthProvider>
-  );
+  return <AppLayoutContent>{children}</AppLayoutContent>;
 }

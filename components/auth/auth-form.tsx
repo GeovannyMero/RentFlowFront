@@ -1,12 +1,14 @@
 'use client';
 
-import { login, signup } from '@/app/auth/login/action';
+import { signup, type AuthState } from '@/app/auth/login/action';
+import { useAuth } from '@/components/auth/auth-provider';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Building2, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useActionState } from 'react';
 
 interface AuthFormProps {
@@ -14,7 +16,33 @@ interface AuthFormProps {
 }
 
 export function AuthForm({ mode }: AuthFormProps) {
-  // Vinculamos el Server Action correspondiente según el modo
+  const { signIn } = useAuth();
+  const router = useRouter();
+
+  // El login se hace con el cliente de Supabase del navegador para que
+  // onAuthStateChange actualice el AuthProvider antes de navegar al home.
+  const login = async (_prevState: AuthState, formData: FormData): Promise<AuthState> => {
+    const email = String(formData.get('email') ?? '').trim();
+    const password = String(formData.get('password') ?? '');
+
+    if (!email || !password) {
+      return { error: 'Por favor ingresa tu correo y contraseña' };
+    }
+
+    const { error } = await signIn(email, password);
+    if (error) {
+      return {
+        error: error.message === 'Invalid login credentials'
+          ? 'Credenciales incorrectas'
+          : error.message,
+      };
+    }
+
+    router.replace('/');
+    router.refresh();
+    return null;
+  };
+
   const actionToUse = mode === 'login' ? login : signup;
 
   // useActionState maneja la respuesta del servidor (state) y el estado de carga (isPending)

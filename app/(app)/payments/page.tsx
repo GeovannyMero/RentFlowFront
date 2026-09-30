@@ -44,6 +44,7 @@ import {
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
+import { markPaymentAsPaid, savePayment } from './actions';
 
 interface PaymentData {
   id: string;
@@ -193,43 +194,16 @@ function PaymentsContent() {
   const handleSave = async () => {
     if (!formData.contract_id || formData.amount <= 0) return;
 
-    if (selectedPayment) {
-      const { error } = await supabase
-        .from('payments')
-        .update({
-          amount: formData.amount,
-          payment_date: formData.payment_date,
-          due_date: formData.due_date,
-          payment_type: formData.payment_type,
-          payment_method: formData.payment_method || null,
-          reference_number: formData.reference_number || null,
-          notes: formData.notes || null,
-          status: formData.status,
-        })
-        .eq('id', selectedPayment.id);
+    const { error } = await savePayment(selectedPayment?.id ?? null, formData);
 
-      if (!error) {
-        loadPayments();
-        setPaymentDialogOpen(false);
-      }
-    } else {
-      const { error } = await supabase.from('payments').insert([formData]);
-
-      if (!error) {
-        loadPayments();
-        setPaymentDialogOpen(false);
-      }
+    if (!error) {
+      loadPayments();
+      setPaymentDialogOpen(false);
     }
   };
 
   const handleMarkAsPaid = async (payment: PaymentData) => {
-    await supabase
-      .from('payments')
-      .update({
-        status: 'paid',
-        payment_date: format(new Date(), 'yyyy-MM-dd'),
-      })
-      .eq('id', payment.id);
+    await markPaymentAsPaid(payment.id);
     loadPayments();
   };
 
